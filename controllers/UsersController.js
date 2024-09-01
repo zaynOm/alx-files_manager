@@ -5,10 +5,10 @@ class UsersController {
   static async postNew(req, res) {
     const { email, password } = req.body;
     if (!email) {
-      return res.status(400).send({ error: 'Missing email' });
+      return res.status(400).json({ error: 'Missing email' });
     }
     if (!password) {
-      return res.status(400).send({ error: 'Missing password' });
+      return res.status(400).json({ error: 'Missing password' });
     }
 
     const users = await dbClient.db.collection('users');
