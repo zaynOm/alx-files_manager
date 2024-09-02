@@ -26,6 +26,14 @@ class DBClient {
   async nbFiles() {
     return this.db.collection('files').countDocuments();
   }
+
+  async findOne(collection, query, options = {}) {
+    return this.db.collection(collection).findOne(query, options);
+  }
+
+  async insertOne(collection, document) {
+    return this.db.collection(collection).insertOne(document);
+  }
 }
 
 const dbClient = new DBClient();
