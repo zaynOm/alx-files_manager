@@ -27,6 +27,10 @@ class DBClient {
     return this.db.collection('files').countDocuments();
   }
 
+  async find(collection, query, options = {}) {
+    return this.db.collection(collection).find(query, options).toArray();
+  }
+
   async findOne(collection, query, options = {}) {
     return this.db.collection(collection).findOne(query, options);
   }
