@@ -115,20 +115,16 @@ class FilesController {
 
   static async getFile(req, res) {
     const { id } = req.params;
+    const token = req.header('x-token');
+    const userId = await redisClient.get(`auth_${token}`);
 
     const file = await dbClient.findOne('files', { _id: ObjectId(id) });
-    if (!file) {
+    if (!file || (!file.isPublic && (!userId || file.userId.toString() !== userId))) {
       return res.status(404).json({ error: 'Not found' });
     }
 
     if (file.type === 'folder') {
       return res.status(400).json({ error: "A folder doesn't have content" });
-    }
-
-    const token = req.header('x-token');
-    const userId = await redisClient.get(`auth_${token}`);
-    if (!['folder', 'file'].includes(file.type) || (!file.isPublic && (!userId || file.userId !== userId))) {
-      return res.status(404).json({ error: 'Not found' });
     }
 
     if (!fs.existsSync(file.localPath)) {
