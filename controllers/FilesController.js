@@ -40,7 +40,7 @@ class FilesController {
       name,
       type,
       isPublic,
-      parentId,
+      parentId: !parentId ? 0 : ObjectId(parentId),
     };
 
     if (type !== 'folder') {
@@ -53,15 +53,15 @@ class FilesController {
       await fs.promises.mkdir(folderPath, { recursive: true });
       await fs.promises.writeFile(localPath, decodedData);
 
-      if (type === 'image') {
-        fileQueue.add({ userId, fileId: file._id });
-      }
-
       newFile.localPath = localPath;
     }
 
     // spread the new file so the _id doesn't get added to it
     const fileResult = await dbClient.insertOne('files', { ...newFile });
+
+    if (type === 'image') {
+      await fileQueue.add({ userId, fileId: fileResult.insertedId });
+    }
     delete newFile.localPath;
     return res.status(201).json({ id: fileResult.insertedId, ...newFile });
   }
@@ -120,7 +120,7 @@ class FilesController {
 
   static async getFile(req, res) {
     const { id } = req.params;
-    const { size } = req.query;
+    const size = parseInt(req.query.size, 10);
     const token = req.header('x-token');
     const userId = await redisClient.get(`auth_${token}`);
 
@@ -133,16 +133,17 @@ class FilesController {
       return res.status(400).json({ error: "A folder doesn't have content" });
     }
 
+    let { localPath } = file;
     if ([500, 250, 100].includes(size)) {
-      file.localPath += `_${size}`;
+      localPath += `_${size}`;
     }
 
-    if (!fs.existsSync(file.localPath)) {
+    if (!fs.existsSync(localPath)) {
       return res.status(404).json({ error: 'Not found' });
     }
 
     const mimeType = mime.lookup(file.name);
-    return res.type(mimeType).sendFile(file.localPath);
+    return res.type(mimeType).sendFile(localPath);
   }
 }
 
