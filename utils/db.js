@@ -38,6 +38,10 @@ class DBClient {
   async insertOne(collection, document) {
     return this.db.collection(collection).insertOne(document);
   }
+
+  async findOneAndUpdate(collection, query, update, options = {}) {
+    return this.db.collection(collection).findOneAndUpdate(query, update, options);
+  }
 }
 
 const dbClient = new DBClient();
