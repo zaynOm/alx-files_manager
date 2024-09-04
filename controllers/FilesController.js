@@ -61,8 +61,8 @@ class FilesController {
 
   static async getShow(req, res) {
     const token = req.header('x-token');
-    const { _id: userId } = await getUserByToken(res, token);
     const { id } = req.params;
+    const { _id: userId } = await getUserByToken(res, token);
 
     const file = await dbClient.findOne('files', { _id: ObjectId(id), userId });
     if (!file) {
@@ -80,8 +80,35 @@ class FilesController {
 
     const { parentId = 0, page = 0 } = req.query;
 
-    const files = await dbClient.find('files', { parentId, userId: user._id }, { skip: page * 20, limit: 20, fields: { localPath: 0 } });
+    const query = { parentId, userId: user._id };
+    const options = { skip: page * 20, limit: 20, fields: { localPath: 0 } };
+    const files = await dbClient.find('files', query, options);
     return res.json(files);
+  }
+
+  static async toggelPublish(req, res, isPublic) {
+    const token = req.header('x-token');
+    const { id } = req.params;
+    const { _id: userId } = await getUserByToken(res, token);
+
+    const query = { _id: ObjectId(id), userId };
+    const updateDoc = { $set: { isPublic } };
+    const options = { returnDocument: 'after' };
+    const updatedFile = await dbClient.findOneAndUpdate('files', query, updateDoc, options);
+    const { _id, localPath, ...fileData } = updatedFile.value;
+    if (!fileData) {
+      return res.status(404).json({ error: 'Not found' });
+    }
+
+    return res.status(200).json({ id: _id, ...fileData });
+  }
+
+  static async putPublish(req, res) {
+    await FilesController.toggelPublish(req, res, true);
+  }
+
+  static async putUnpublish(req, res) {
+    await FilesController.toggelPublish(req, res, false);
   }
 }
 
