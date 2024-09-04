@@ -95,7 +95,7 @@ class FilesController {
     const updateDoc = { $set: { isPublic } };
     const options = { returnDocument: 'after' };
     const updatedFile = await dbClient.findOneAndUpdate('files', query, updateDoc, options);
-    const { _id, localPath, ...fileData } = updatedFile.value;
+    const { _id, ...fileData } = updatedFile.value;
     if (!fileData) {
       return res.status(404).json({ error: 'Not found' });
     }
