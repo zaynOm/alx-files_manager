@@ -1,6 +1,6 @@
 import { ObjectId } from 'mongodb';
 import { v4 as uuidv4 } from 'uuid';
-import { promises as fs } from 'fs';
+import fs from 'fs';
 import path from 'path';
 import mime from 'mime-types';
 import dbClient from '../utils/db';
@@ -49,8 +49,8 @@ class FilesController {
 
       const decodedData = Buffer.from(data, 'base64');
 
-      await fs.mkdir(folderPath, { recursive: true });
-      await fs.writeFile(localPath, decodedData);
+      await fs.promises.mkdir(folderPath, { recursive: true });
+      await fs.promises.writeFile(localPath, decodedData);
 
       newFile.localPath = localPath;
     }
@@ -131,15 +131,12 @@ class FilesController {
       return res.status(404).json({ error: 'Not found' });
     }
 
-    let localFileData;
-    try {
-      localFileData = await fs.readFile(file.localPath, 'utf8');
-    } catch (err) {
+    if (!fs.existsSync(file.localPath)) {
       return res.status(404).json({ error: 'Not found' });
     }
 
     const mimeType = mime.lookup(file.name);
-    return res.type(mimeType).send(localFileData);
+    return res.type(mimeType).sendFile(file.localPath);
   }
 }
 
