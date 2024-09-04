@@ -6,6 +6,7 @@ import mime from 'mime-types';
 import dbClient from '../utils/db';
 import { getUserByToken } from '../utils/utils';
 import redisClient from '../utils/redis';
+import { fileQueue } from '../worker';
 
 class FilesController {
   static async postUpload(req, res) {
@@ -24,8 +25,8 @@ class FilesController {
       return res.status(400).json({ error: 'Missing data' });
     }
 
+    const file = await dbClient.findOne('files', { _id: ObjectId(parentId) });
     if (parentId) {
-      const file = await dbClient.findOne('files', { _id: ObjectId(parentId) });
       if (!file) {
         return res.status(400).json({ error: 'Parent not found' });
       }
@@ -51,6 +52,10 @@ class FilesController {
 
       await fs.promises.mkdir(folderPath, { recursive: true });
       await fs.promises.writeFile(localPath, decodedData);
+
+      if (type === 'image') {
+        fileQueue.add({ userId, fileId: file._id });
+      }
 
       newFile.localPath = localPath;
     }
@@ -115,6 +120,7 @@ class FilesController {
 
   static async getFile(req, res) {
     const { id } = req.params;
+    const { size } = req.query;
     const token = req.header('x-token');
     const userId = await redisClient.get(`auth_${token}`);
 
@@ -125,6 +131,10 @@ class FilesController {
 
     if (file.type === 'folder') {
       return res.status(400).json({ error: "A folder doesn't have content" });
+    }
+
+    if ([500, 250, 100].includes(size)) {
+      file.localPath += `_${size}`;
     }
 
     if (!fs.existsSync(file.localPath)) {
