@@ -10,6 +10,10 @@ class AuthController {
     const auth = req.header('Authorization');
     const [email, password] = basicAuthDecoder(auth);
 
+    if (!email || !password) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+
     const user = await dbClient.findOne('users', { email });
 
     const hashedPassword = sha1(password);
