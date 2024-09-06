@@ -5,7 +5,7 @@ import redisClient from './redis';
 export function basicAuthDecoder(auth) {
   const credentials = auth.split(' ')[1];
   const decodedCredentials = Buffer.from(credentials, 'base64').toString(
-    'utf8',
+    'ascii',
   );
   return decodedCredentials.split(':');
 }
