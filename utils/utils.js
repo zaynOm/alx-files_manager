@@ -10,20 +10,17 @@ export function basicAuthDecoder(auth) {
   return decodedCredentials.split(':');
 }
 
-export async function getUserByToken(res, token) {
+export async function getUserByToken(token) {
   if (!token) {
-    return res.status(401).json({ error: 'Unauthorized' });
+    return null;
   }
 
   const userId = await redisClient.get(`auth_${token}`);
   if (!userId) {
-    return res.status(401).json({ error: 'Unauthorized' });
+    return null;
   }
 
   const user = await dbClient.findOne('users', { _id: ObjectId(userId) });
-  if (!user) {
-    return res.status(401).json({ error: 'Unauthorized' });
-  }
 
   return user;
 }
