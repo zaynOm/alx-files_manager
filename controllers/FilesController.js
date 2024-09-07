@@ -11,7 +11,11 @@ import { fileQueue } from '../worker';
 class FilesController {
   static async postUpload(req, res) {
     const token = req.header('x-token');
-    const { _id: userId } = await getUserByToken(res, token);
+    const { _id: userId } = await getUserByToken(token);
+    if (!user) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+
     const {
       name, type, parentId = 0, isPublic = false, data,
     } = req.body;
@@ -40,7 +44,7 @@ class FilesController {
       name,
       type,
       isPublic,
-      parentId: !parentId ? 0 : ObjectId(parentId),
+      parentId: !parentId ? '0' : ObjectId(parentId),
     };
 
     if (type !== 'folder') {
@@ -69,7 +73,10 @@ class FilesController {
   static async getShow(req, res) {
     const token = req.header('x-token');
     const { id } = req.params;
-    const { _id: userId } = await getUserByToken(res, token);
+    const { _id: userId } = await getUserByToken(token);
+    if (!user) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
 
     const file = await dbClient.findOne('files', { _id: ObjectId(id), userId });
     if (!file) {
@@ -83,20 +90,30 @@ class FilesController {
 
   static async getIndex(req, res) {
     const token = req.header('x-token');
-    const user = await getUserByToken(res, token);
+    const user = await getUserByToken(token);
+    if (!user) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
 
-    const { parentId = 0, page = 0 } = req.query;
+    const { parentId = '0', page = 0 } = req.query;
 
     const query = { parentId, userId: user._id };
     const options = { skip: page * 20, limit: 20, fields: { localPath: 0 } };
     const files = await dbClient.find('files', query, options);
+    files.forEach((file) => {
+      file.id = file._id;
+      delete file._id;
+    });
     return res.json(files);
   }
 
   static async toggelPublish(req, res, isPublic) {
     const token = req.header('x-token');
     const { id } = req.params;
-    const { _id: userId } = await getUserByToken(res, token);
+    const { _id: userId } = await getUserByToken(token);
+    if (!user) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
 
     const query = { _id: ObjectId(id), userId };
     const updateDoc = { $set: { isPublic } };
