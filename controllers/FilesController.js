@@ -163,7 +163,8 @@ class FilesController {
     }
 
     const mimeType = mime.lookup(file.name);
-    return res.type(mimeType).sendFile(localPath);
+    res.set('Content-Type', mimeType);
+    return res.sendFile(localPath);
   }
 }
 
