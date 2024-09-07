@@ -125,7 +125,7 @@ class FilesController {
     if (!updatedFile.value) {
       return res.status(404).json({ error: 'Not found' });
     }
-    const { _id, ...fileData } = updatedFile.value;
+    const { _id, localPath, ...fileData } = updatedFile.value;
 
     return res.status(200).json({ id: _id, ...fileData });
   }
