@@ -11,8 +11,8 @@ import { fileQueue } from '../worker';
 class FilesController {
   static async postUpload(req, res) {
     const token = req.header('x-token');
-    const { _id: userId } = await getUserByToken(token);
-    if (!userId) {
+    const user = await getUserByToken(token);
+    if (!user) {
       return res.status(401).json({ error: 'Unauthorized' });
     }
 
@@ -40,7 +40,7 @@ class FilesController {
     }
 
     const newFile = {
-      userId,
+      userId: user._id,
       name,
       type,
       isPublic,
@@ -64,7 +64,7 @@ class FilesController {
     const fileResult = await dbClient.insertOne('files', { ...newFile });
 
     if (type === 'image') {
-      await fileQueue.add({ userId, fileId: fileResult.insertedId });
+      await fileQueue.add({ userId: user._id, fileId: fileResult.insertedId });
     }
     delete newFile.localPath;
     return res.status(201).json({ id: fileResult.insertedId, ...newFile });
@@ -73,12 +73,12 @@ class FilesController {
   static async getShow(req, res) {
     const token = req.header('x-token');
     const { id } = req.params;
-    const { _id: userId } = await getUserByToken(token);
-    if (!userId) {
+    const user = await getUserByToken(token);
+    if (!user) {
       return res.status(401).json({ error: 'Unauthorized' });
     }
 
-    const file = await dbClient.findOne('files', { _id: ObjectId(id), userId });
+    const file = await dbClient.findOne('files', { _id: ObjectId(id), userId: user._id });
     if (!file) {
       return res.status(404).json({ error: 'Not found' });
     }
@@ -113,12 +113,12 @@ class FilesController {
   static async toggelPublish(req, res, isPublic) {
     const token = req.header('x-token');
     const { id } = req.params;
-    const { _id: userId } = await getUserByToken(token);
-    if (!userId) {
+    const user = await getUserByToken(token);
+    if (!user) {
       return res.status(401).json({ error: 'Unauthorized' });
     }
 
-    const query = { _id: ObjectId(id), userId };
+    const query = { _id: ObjectId(id), userId: user._id };
     const updateDoc = { $set: { isPublic } };
     const options = { returnDocument: 'after' };
     const updatedFile = await dbClient.findOneAndUpdate('files', query, updateDoc, options);
