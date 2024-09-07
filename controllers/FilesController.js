@@ -66,6 +66,7 @@ class FilesController {
     if (type === 'image') {
       await fileQueue.add({ userId: user._id, fileId: fileResult.insertedId });
     }
+    newFile.parentId = newFile.parentId === '0' ? 0 : newFile.parentId;
     delete newFile.localPath;
     return res.status(201).json({ id: fileResult.insertedId, ...newFile });
   }
